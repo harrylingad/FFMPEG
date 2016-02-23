@@ -1,0 +1,43 @@
+	
+===============================================================================================================================================
+How to cut a video, without re-encoding
+Use this to cut video from [start] for [duration]:
+
+ffmpeg -ss [start] -i in.mp4 -t [duration] -c copy out.mp4
+Here, the options mean the following:
+
+-ss specifies the start time, e.g. 00:01:23.000 or 83 (in seconds)
+-t specifies the duration of the clip (same format).
+Recent ffmpeg also has a flag to supply the end time with -to.
+-c copy copies the first video, audio, and subtitle bitstream from the input to the output file without re-encoding them. This won't harm the quality and make the command run within seconds.
+Note that with older ffmpeg versions, this command may not be frame-accurate when copying the bitstreams.
+
+===================================================================================================================================================
+How to cut a video, without re-encoding — accurate method
+If you have an old ffmpeg version and you want frame accuracy, use this instead:
+
+ffmpeg -i in.mp4 -ss [start] -t [duration] -c copy out.mp4
+However, there's one drawback. The video will have to be decoded until it reaches the position implied by -ss, and only then it starts copying the bitstream. This can take a long time, especially for really long videos.
+
+===================================================================================================================================================
+How to cut a video, with re-encoding
+If you leave out the -c copy option, ffmpeg will automatically re-encode the output video and audio according to the format you chose. For high quality video and audio, read the x264 Encoding Guide and the AAC Encoding Guide, respectively.
+
+For example:
+
+ffmpeg -ss [start] -i in.mp4 -t [duration] -c:v libx264 -c:a aac -strict experimental -b:a 128k out.mp4
+
+As explained by Seeking with FFmpeg): When using -ss before -i on FFmpeg 2.1 and newer, seeking is frame-accurate when re-encoding the video (i.e., not using -c copy). So you don't have to worry about putting -ss after -i for speed.
+
+Converting end points to duration
+If you need to use an old version of ffmpeg and can't use the -to option, you can create an edit list of in and out points, and convert these into in points with duration. For this you can use this Ruby script I wrote, which calculates the difference:
+
+require "Time"
+def time_diff(time1_str, time2_str)
+  t = Time.at( Time.parse(time2_str) - Time.parse(time1_str) )
+  (t - t.gmt_offset).strftime("%H:%M:%S.%L")
+end
+For example:
+
+time_diff("00:09:23.000", "00:25:33.000")
+=> "00:16:10.000" 
